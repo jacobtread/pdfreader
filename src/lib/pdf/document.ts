@@ -6,15 +6,12 @@ import {
 } from "pdfjs-dist";
 // @ts-expect-error Vite Worker
 import PDFWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url&inline";
-import { RefProxy } from "pdfjs-dist/types/src/display/api";
 import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+  DocumentInitParameters,
+  RefProxy,
+  TypedArray,
+} from "pdfjs-dist/types/src/display/api";
+import { createContext, useContext, useEffect, useState } from "react";
 
 /**
  * General setup for pdf.js
@@ -29,13 +26,15 @@ export interface usePDFDocumentParams {
   /**
    * The URL of the PDF file to load.
    */
-  fileURL: string;
+  fileURL: string | URL | TypedArray | ArrayBuffer | DocumentInitParameters;
 }
 
 export const usePDFDocumentContext = ({ fileURL }: usePDFDocumentParams) => {
   const [ready, setReady] = useState(false);
+  const [error, setError] = useState<unknown>(null);
   const [progress, setProgress] = useState(0);
-  const pdfDocumentProxy = useRef<PDFDocumentProxy | null>(null);
+  const [pdfDocumentProxy, setPdfDocumentProxy] =
+    useState<PDFDocumentProxy | null>(null);
 
   useEffect(() => {
     setReady(false);
@@ -54,13 +53,15 @@ export const usePDFDocumentContext = ({ fileURL }: usePDFDocumentParams) => {
 
     loadingTask.promise.then(
       (proxy) => {
-        pdfDocumentProxy.current = proxy;
+        setPdfDocumentProxy(proxy);
         setProgress(1);
         setReady(true);
+        setError(null);
       },
       (error) => {
-        // eslint-disable-next-line no-console
-        console.error("Error loading PDF document", error);
+        setProgress(0);
+        setReady(false);
+        setError(error);
       },
     );
 
@@ -69,24 +70,15 @@ export const usePDFDocumentContext = ({ fileURL }: usePDFDocumentParams) => {
     };
   }, [fileURL]);
 
-  const getDocumentProxy = useCallback(() => {
-    if (!pdfDocumentProxy.current) {
-      throw new Error("PDF document not loaded");
-    }
-
-    return pdfDocumentProxy.current;
-  }, [pdfDocumentProxy.current]);
-
   return {
     context: {
-      get pdfDocumentProxy() {
-        return getDocumentProxy();
-      },
+      pdfDocumentProxy,
       async getDestinationPage(dest: string | unknown[] | Promise<unknown[]>) {
+        if (!pdfDocumentProxy) return;
         let explicitDest: unknown[] | null;
 
         if (typeof dest === "string") {
-          explicitDest = await getDocumentProxy().getDestination(dest);
+          explicitDest = await pdfDocumentProxy.getDestination(dest);
         } else if (Array.isArray(dest)) {
           explicitDest = dest;
         } else {
@@ -99,34 +91,36 @@ export const usePDFDocumentContext = ({ fileURL }: usePDFDocumentParams) => {
 
         const explicitRef = explicitDest[0] as RefProxy;
 
-        const page = await getDocumentProxy().getPageIndex(explicitRef);
+        const page = await pdfDocumentProxy.getPageIndex(explicitRef);
 
         return page;
       },
       ready,
+      error,
     } satisfies PDFDocumentContextType,
     ready,
     progress,
-    pdfDocumentProxy: pdfDocumentProxy.current,
+    error,
+    pdfDocumentProxy,
   };
 };
 
 export interface PDFDocumentContextType {
-  pdfDocumentProxy: PDFDocumentProxy;
+  pdfDocumentProxy: PDFDocumentProxy | null;
   getDestinationPage: (
     dest: string | unknown[] | Promise<unknown[]>,
   ) => Promise<number | undefined>;
   ready: boolean;
+  error: unknown;
 }
 
 export const defaultPDFDocumentContext: PDFDocumentContextType = {
-  get pdfDocumentProxy(): PDFDocumentProxy {
-    throw new Error("PDF document not loaded");
-  },
+  pdfDocumentProxy: null,
   getDestinationPage: async () => {
-    throw new Error("PDF document not loaded");
+    return undefined;
   },
   ready: false,
+  error: null,
 } satisfies PDFDocumentContextType;
 
 export const PDFDocumentContext = createContext(defaultPDFDocumentContext);

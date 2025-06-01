@@ -97,6 +97,8 @@ export const usePDFOutline = () => {
     useState<Awaited<ReturnType<PDFDocumentProxy["getOutline"]>>>();
 
   useEffect(() => {
+    if (!pdfDocumentProxy) return () => {};
+
     const { promise: outline, cancel } = cancellable(
       pdfDocumentProxy.getOutline(),
     );

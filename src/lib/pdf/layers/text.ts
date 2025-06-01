@@ -1,11 +1,14 @@
 import { TextLayer } from "pdfjs-dist";
 import { useEffect, useRef } from "react";
 
+import { useViewport } from "@/components";
+
 import { usePDFPage } from "../page";
 
 export const useTextLayer = () => {
   const textContainerRef = useRef<HTMLDivElement>(null);
   const { pdfPageProxy } = usePDFPage();
+  const { rotation } = useViewport();
 
   useEffect(() => {
     if (!textContainerRef.current) {
@@ -15,7 +18,7 @@ export const useTextLayer = () => {
     const textLayer = new TextLayer({
       textContentSource: pdfPageProxy.streamTextContent(),
       container: textContainerRef.current,
-      viewport: pdfPageProxy.getViewport({ scale: 1 }),
+      viewport: pdfPageProxy.getViewport({ scale: 1, rotation }),
     });
 
     void textLayer.render();
@@ -23,7 +26,7 @@ export const useTextLayer = () => {
     return () => {
       textLayer.cancel();
     };
-  }, [pdfPageProxy, textContainerRef.current]);
+  }, [pdfPageProxy, textContainerRef.current, rotation]);
 
   return {
     textContainerRef,

@@ -1,7 +1,7 @@
 import { AnnotationLayer } from "pdfjs-dist";
 import { useEffect, useRef } from "react";
 
-import { useVisibility } from "@/lib/viewport";
+import { useViewport, useVisibility } from "@/lib/viewport";
 
 import { usePDFLinkService } from "../links";
 import { usePDFPage } from "../page";
@@ -25,6 +25,7 @@ export const useAnnotationLayer = (params: AnnotationLayerParams) => {
   const { visible } = useVisibility({
     elementRef: annotationLayerRef,
   });
+  const { rotation } = useViewport();
 
   const { pdfPageProxy } = usePDFPage();
 
@@ -49,11 +50,12 @@ export const useAnnotationLayer = (params: AnnotationLayerParams) => {
 
     const annotationLayerConfig = {
       div: annotationLayerRef.current,
-      viewport: pdfPageProxy.getViewport({ scale: 1 }),
+      viewport: pdfPageProxy.getViewport({ scale: 1, rotation }),
       page: pdfPageProxy,
       accessibilityManager: undefined,
       annotationCanvasMap: undefined,
       annotationEditorUIManager: undefined,
+      structTreeLayer: undefined,
     };
 
     const annotationLayer = new AnnotationLayer(annotationLayerConfig);
@@ -78,7 +80,7 @@ export const useAnnotationLayer = (params: AnnotationLayerParams) => {
     return () => {
       cancel();
     };
-  }, [pdfPageProxy, annotationLayerRef.current]);
+  }, [pdfPageProxy, annotationLayerRef.current, rotation]);
 
   return {
     annotationLayerRef,

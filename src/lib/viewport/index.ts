@@ -65,8 +65,10 @@ export const useVisibility = ({
 
 export interface ViewportContextType {
   zoom: number;
+  rotation: number;
   minZoom: number;
   maxZoom: number;
+  setRotation: (rotation: number | ((prevRotation: number) => number)) => void;
   setZoom: (zoom: number | ((prevZoom: number) => number)) => void;
   translateX: number;
   setTranslateX: (
@@ -95,6 +97,10 @@ export interface ViewportContextType {
 
 export const defaultViewportContext = {
   zoom: 1,
+  rotation: 90,
+  setRotation: () => {
+    throw new Error("Viewport context not initialized");
+  },
   minZoom: 0.5,
   maxZoom: 10,
   setZoom: () => {
@@ -140,11 +146,12 @@ const clamp = (value: number, min: number, max: number) => {
 };
 
 export const useViewportContext = ({
-  minZoom = 0.5,
+  minZoom = 0.25,
   maxZoom = 5,
   defaultZoom = 1,
 }: ViewportProps) => {
   const [zoom, setZoom] = useState(defaultZoom);
+  const [rotation, setRotation] = useState(0);
   const [translateX, setTranslateX] = useState(0);
   const [translateY, setTranslateY] = useState(0);
   const pages = useRef(
@@ -156,6 +163,15 @@ export const useViewportContext = ({
   const [currentPage, setCurrentPage] = useState(1);
 
   return {
+    rotation,
+    setRotation(rotation) {
+      setRotation((prevRotation) => {
+        if (typeof rotation === "function") {
+          return rotation(prevRotation);
+        }
+        return rotation;
+      });
+    },
     zoom,
     minZoom,
     maxZoom,
@@ -442,7 +458,11 @@ export const useViewportContainer = ({
           };
         });
 
-        const newZoom = clamp(ms * newMemo.originZoom, minZoom, maxZoom);
+        const safeValue = Number.isNaN(ms * newMemo.originZoom)
+          ? transformations.current.zoom // fallback to previous zoom
+          : ms * newMemo.originZoom;
+
+        const newZoom = clamp(safeValue, minZoom, maxZoom);
 
         const realMs = newZoom / newMemo.originZoom;
 
@@ -464,6 +484,9 @@ export const useViewportContainer = ({
     },
     {
       target: containerRef,
+      pinch: {
+        scaleBounds: { min: 0.25, max: 2 },
+      },
     },
   );
 

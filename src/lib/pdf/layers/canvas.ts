@@ -10,7 +10,7 @@ export const useCanvasLayer = () => {
   const { pdfPageProxy } = usePDFPage();
   const dpr = useDPR();
   const { visible } = useVisibility({ elementRef: canvasRef });
-  const { zoom: bouncyZoom } = useViewport();
+  const { zoom: bouncyZoom, rotation } = useViewport();
   const zoom = useDebounce(bouncyZoom, 100);
   const debouncedVisible = useDebounce(visible, 100);
 
@@ -19,24 +19,24 @@ export const useCanvasLayer = () => {
       return;
     }
 
-    const viewport = pdfPageProxy.getViewport({ scale: 1 });
-
+    const viewport = pdfPageProxy.getViewport({ scale: 1, rotation });
     const canvas = canvasRef.current;
+    const outputScale = debouncedVisible ? dpr * zoom : 0.5;
 
-    const scale = debouncedVisible ? dpr * zoom : 0.5;
-
-    canvas.height = viewport.height * scale;
-    canvas.width = viewport.width * scale;
+    canvas.height = viewport.height * outputScale;
+    canvas.width = viewport.width * outputScale;
 
     canvas.style.height = `${viewport.height}px`;
     canvas.style.width = `${viewport.width}px`;
 
     const canvasContext = canvas.getContext("2d")!;
-    canvasContext.scale(scale, scale);
+    const transform =
+      outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : undefined;
 
     const renderingTask = pdfPageProxy.render({
       canvasContext: canvasContext,
       viewport,
+      transform,
     });
 
     renderingTask.promise.catch((error) => {
@@ -51,7 +51,7 @@ export const useCanvasLayer = () => {
     return () => {
       void renderingTask.cancel();
     };
-  }, [pdfPageProxy, canvasRef.current, dpr, debouncedVisible, zoom]);
+  }, [pdfPageProxy, canvasRef.current, dpr, debouncedVisible, zoom, rotation]);
 
   return {
     canvasRef,

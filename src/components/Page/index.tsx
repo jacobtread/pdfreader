@@ -1,5 +1,5 @@
 import { usePDFPageContext, PDFPageContext } from "@/lib/pdf/page";
-import { usePageViewport } from "@/lib/viewport";
+import { usePageViewport, useViewport } from "@/lib/viewport";
 import { HTMLProps, ReactNode, useRef } from "react";
 import { Primitive } from "../Primitive";
 
@@ -14,8 +14,11 @@ export const Page = ({
 }) => {
   const pageContainerRef = useRef<HTMLDivElement>(null);
   const { ready, context } = usePDFPageContext(pageNumber);
+  const { rotation } = useViewport();
 
   usePageViewport({ pageContainerRef, pageNumber });
+
+  const isPortrait = Math.abs(rotation) !== 90 && rotation !== 270;
 
   return (
     <PDFPageContext.Provider value={context}>
@@ -31,9 +34,22 @@ export const Page = ({
               {
                 ...style,
                 "--scale-factor": 1,
+                "--total-scale-factor": 1,
                 position: "relative",
-                width: `${context.pdfPageProxy.view[2] - context.pdfPageProxy.view[0]}px`,
-                height: `${context.pdfPageProxy.view[3] - context.pdfPageProxy.view[1]}px`,
+                width: `${
+                  isPortrait
+                    ? context.pdfPageProxy.view[2] -
+                      context.pdfPageProxy.view[0]
+                    : context.pdfPageProxy.view[3] -
+                      context.pdfPageProxy.view[1]
+                }px`,
+                height: `${
+                  isPortrait
+                    ? context.pdfPageProxy.view[3] -
+                      context.pdfPageProxy.view[1]
+                    : context.pdfPageProxy.view[2] -
+                      context.pdfPageProxy.view[0]
+                }px`,
               } as React.CSSProperties
             }
             {...props}

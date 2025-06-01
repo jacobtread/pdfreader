@@ -1,10 +1,16 @@
 export const cancellable = <T extends Promise<unknown>>(
-  promise: T,
+  makePromise: T | ((hook: (hook: VoidFunction) => void) => T),
 ): {
   promise: T;
   cancel: () => void;
 } => {
   let isCancelled = false;
+
+  let hooks: VoidFunction[] = [];
+  const promise =
+    makePromise instanceof Function
+      ? makePromise((hook) => hooks.push(hook))
+      : makePromise;
 
   const wrappedPromise = new Promise((resolve, reject) => {
     promise.then(
@@ -25,6 +31,12 @@ export const cancellable = <T extends Promise<unknown>>(
     promise: wrappedPromise,
     cancel() {
       isCancelled = true;
+
+      for (const hook of hooks) {
+        hook();
+      }
+
+      hooks = [];
     },
   };
 };

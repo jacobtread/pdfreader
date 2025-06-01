@@ -1,7 +1,7 @@
 import { useDebounce } from "@uidotdev/usehooks";
 import { useEffect, useRef } from "react";
 
-import { useDPR, useVisibility } from "../viewport";
+import { useDPR, useViewport, useVisibility } from "../viewport";
 import { usePDFDocument } from "./document";
 import { cancellable } from "./utils";
 
@@ -17,6 +17,7 @@ export const useThumbnail = (
   const dpr = useDPR();
   const { visible } = useVisibility({ elementRef: canvasRef });
   const debouncedVisible = useDebounce(visible, 100);
+  const { rotation } = useViewport();
 
   const { maxHeight, maxWidth } = Object.assign(
     {
@@ -27,7 +28,7 @@ export const useThumbnail = (
   );
 
   useEffect(() => {
-    const { cancel } = cancellable(
+    const { cancel } = cancellable((hook) =>
       (async () => {
         if (!canvasRef.current || !pdfDocumentProxy) {
           return;
@@ -35,7 +36,7 @@ export const useThumbnail = (
 
         const page = await pdfDocumentProxy.getPage(pageNumber);
 
-        const viewport = page.getViewport({ scale: 1 });
+        const viewport = page.getViewport({ scale: 1, rotation });
 
         const smallestScale = Math.min(
           maxWidth / viewport.width,
@@ -43,9 +44,7 @@ export const useThumbnail = (
         );
 
         const scale = smallestScale * (debouncedVisible ? dpr : 0.5);
-
-        const viewportScaled = page.getViewport({ scale });
-
+        const viewportScaled = page.getViewport({ scale, rotation });
         const canvas = canvasRef.current;
 
         canvas.width = viewportScaled.width;
@@ -56,14 +55,16 @@ export const useThumbnail = (
           viewport: viewportScaled,
         });
 
-        void renderingTask.promise;
+        hook(() => renderingTask.cancel());
+
+        void renderingTask.promise.catch(() => {});
       })(),
     );
 
     return () => {
       cancel();
     };
-  }, [pageNumber, pdfDocumentProxy, debouncedVisible]);
+  }, [pageNumber, pdfDocumentProxy, debouncedVisible, rotation]);
 
   return {
     canvasRef,

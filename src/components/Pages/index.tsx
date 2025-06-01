@@ -6,9 +6,10 @@ export const Pages = ({ children }: { children: ReactElement }) => {
 
   return (
     <>
-      {Array.from({ length: pdfDocumentProxy.numPages }).map((_, index) =>
-        cloneElement(children, { key: index, pageNumber: index + 1 }),
-      )}
+      {pdfDocumentProxy !== null &&
+        Array.from({ length: pdfDocumentProxy.numPages }).map((_, index) =>
+          cloneElement(children, { key: index, pageNumber: index + 1 }),
+        )}
     </>
   );
 };

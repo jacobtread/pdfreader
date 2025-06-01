@@ -8,7 +8,7 @@ import {
   PDFLinkServiceContext,
 } from "@/lib/pdf/links";
 import { useViewportContext, ViewportContext } from "@/lib/viewport";
-import { forwardRef, HTMLProps, ReactNode } from "react";
+import { forwardRef, HTMLProps } from "react";
 import { Primitive } from "../Primitive";
 
 export const Root = forwardRef(
@@ -17,16 +17,24 @@ export const Root = forwardRef(
       children,
       fileURL,
       loader,
+      renderError,
       ...props
-    }: HTMLProps<HTMLDivElement> &
+    }: Omit<HTMLProps<HTMLDivElement>, "children"> &
       usePDFDocumentParams & {
-        loader?: ReactNode;
+        loader?: React.ReactNode;
+        renderError?: (error: unknown) => React.ReactNode;
+        children: (
+          error: unknown,
+          ready: boolean,
+          progress: number,
+        ) => React.ReactNode;
       },
     ref,
   ) => {
-    const { ready, context, pdfDocumentProxy } = usePDFDocumentContext({
-      fileURL,
-    });
+    const { ready, progress, error, context, pdfDocumentProxy } =
+      usePDFDocumentContext({
+        fileURL,
+      });
     const viewportContext = useViewportContext({});
     const linkService = useCreatePDFLinkService(
       pdfDocumentProxy,
@@ -35,17 +43,13 @@ export const Root = forwardRef(
 
     return (
       <Primitive.div ref={ref} {...props}>
-        {ready ? (
-          <PDFDocumentContext.Provider value={context}>
-            <ViewportContext.Provider value={viewportContext}>
-              <PDFLinkServiceContext.Provider value={linkService}>
-                {children}
-              </PDFLinkServiceContext.Provider>
-            </ViewportContext.Provider>
-          </PDFDocumentContext.Provider>
-        ) : (
-          loader || "Loading..."
-        )}
+        <PDFDocumentContext.Provider value={context}>
+          <ViewportContext.Provider value={viewportContext}>
+            <PDFLinkServiceContext.Provider value={linkService}>
+              {children(error, ready, progress)}
+            </PDFLinkServiceContext.Provider>
+          </ViewportContext.Provider>
+        </PDFDocumentContext.Provider>
       </Primitive.div>
     );
   },
