@@ -35,6 +35,8 @@ export const Page = ({
               {
                 ...style,
                 "--scale-factor": 1,
+                "--scale-round-x": "1px",
+                "--scale-round-y": "1px",
                 "--total-scale-factor": 1,
                 position: "relative",
                 width: `${
