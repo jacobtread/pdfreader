@@ -15,13 +15,14 @@ export const Thumbnail = ({
   ...props
 }: HTMLProps<HTMLCanvasElement> & { pageNumber?: number }) => {
   const { canvasRef } = useThumbnail(pageNumber);
-  const { goToPage } = useViewport();
+  const { currentPage, goToPage } = useViewport();
 
   useEffect(() => {});
 
   return (
     <Primitive.canvas
       {...props}
+      data-active={currentPage === pageNumber}
       role="button"
       tabIndex={0}
       onClick={(e: any) => {
