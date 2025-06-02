@@ -18,7 +18,8 @@ export const Page = ({
 
   usePageViewport({ pageContainerRef, pageNumber });
 
-  const isPortrait = Math.abs(rotation) !== 90 && rotation !== 270;
+  const rotationAbs = Math.abs(rotation);
+  const isPortrait = rotationAbs === 0 || rotationAbs === 180;
 
   return (
     <PDFPageContext.Provider value={context}>
