@@ -29,12 +29,7 @@ export interface usePDFDocumentParams {
   fileURL: FileURL;
 }
 
-export type FileURL =
-  | string
-  | URL
-  | TypedArray
-  | ArrayBuffer
-  | DocumentInitParameters;
+type FileURL = string | URL | TypedArray | ArrayBuffer | DocumentInitParameters;
 
 export const usePDFDocumentContext = ({ fileURL }: usePDFDocumentParams) => {
   const [ready, setReady] = useState(false);
