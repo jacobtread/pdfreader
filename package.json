@@ -7,9 +7,9 @@
   "type": "module",
   "exports": {
     ".": {
+      "types": "./dist/src/index.d.ts",
       "require": "./dist/pdfreader.cjs",
-      "import": "./dist/pdfreader.js",
-      "types": "./dist/src/index.d.ts"
+      "import": "./dist/pdfreader.js"
     },
     "./style.css": "./dist/style.css"
   },
