@@ -42,25 +42,39 @@ export const useVisibility = ({
 }: {
   elementRef: RefObject<HTMLElement>;
 }) => {
-  const [visible, setVisible] = useState(false);
+  const [visibilityPercentage, setVisibilityPercentage] = useState(0);
+  const lastValueRef = useRef(0);
 
   useEffect(() => {
-    if (!elementRef.current) {
-      return;
-    }
+    const el = elementRef.current;
+    if (!el) return;
 
-    const observer = new IntersectionObserver(([entry]) => {
-      setVisible(entry.isIntersecting);
-    });
+    // Create observer with a reasonable threshold step
+    const thresholds = Array.from({ length: 21 }, (_, i) => i * 0.05); // every 5%
 
-    observer.observe(elementRef.current);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const percent = entry.intersectionRatio * 100;
+
+        // Update only if the percent has meaningfully changed
+        if (Math.abs(percent - lastValueRef.current) > 1) {
+          lastValueRef.current = percent;
+          setVisibilityPercentage(percent);
+        }
+      },
+      {
+        threshold: thresholds,
+      },
+    );
+
+    observer.observe(el);
 
     return () => {
       observer.disconnect();
     };
-  }, [elementRef.current]);
+  }, [elementRef]);
 
-  return { visible };
+  return { visible: visibilityPercentage > 0, visibilityPercentage };
 };
 
 export interface ViewportContextType {
@@ -197,11 +211,11 @@ export const useViewportContext = ({
         const newVisiblePages = new Map(prevVisiblePages);
         newVisiblePages.set(pageNumber, percentageVisible);
 
-        const newCurrentPage = Math.min(
-          ...[...newVisiblePages]
+        const newCurrentPage =
+          [...newVisiblePages]
             .filter(([, visibility]) => visibility > 0)
-            .map(([pageNumber]) => pageNumber),
-        );
+            .sort((a, b) => b[1] - a[1])
+            .map(([pageNumber]) => pageNumber)[0] ?? 1;
 
         setCurrentPage(newCurrentPage);
 
@@ -502,13 +516,15 @@ export const usePageViewport = ({
   pageContainerRef: RefObject<HTMLDivElement>;
   pageNumber: number;
 }) => {
-  const { visible } = useVisibility({ elementRef: pageContainerRef });
+  const { visibilityPercentage } = useVisibility({
+    elementRef: pageContainerRef,
+  });
 
   const { setPageRef, setPageVisible } = useViewport();
 
   useEffect(() => {
-    setPageVisible(pageNumber, visible ? 1 : 0);
-  }, [visible, pageNumber]);
+    setPageVisible(pageNumber, visibilityPercentage);
+  }, [visibilityPercentage, pageNumber]);
 
   useEffect(() => {
     setPageRef(pageNumber, pageContainerRef);
