@@ -26,8 +26,15 @@ export interface usePDFDocumentParams {
   /**
    * The URL of the PDF file to load.
    */
-  fileURL: string | URL | TypedArray | ArrayBuffer | DocumentInitParameters;
+  fileURL: FileURL;
 }
+
+export type FileURL =
+  | string
+  | URL
+  | TypedArray
+  | ArrayBuffer
+  | DocumentInitParameters;
 
 export const usePDFDocumentContext = ({ fileURL }: usePDFDocumentParams) => {
   const [ready, setReady] = useState(false);
