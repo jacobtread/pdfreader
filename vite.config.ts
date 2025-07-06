@@ -15,7 +15,7 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: true,
     rollupOptions: {
-      external: ["react", "react-dom", "pdfjs-dist"],
+      external: ["react", "react-dom", "pdfjs-dist", "react/jsx-runtime"],
     },
   },
   plugins: [react()],
