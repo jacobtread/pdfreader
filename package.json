@@ -2,14 +2,14 @@
   "name": "@jacobtread/pdfreader",
   "version": "0.1.0",
   "description": "Easiest way to display and interact with PDFs from your web app.",
-  "main": "dist/pdfreader.cjs",
-  "types": "dist/src/index.d.ts",
+  "main": "dist/index.cjs.js",
+  "types": "dist/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/src/index.d.ts",
-      "require": "./dist/pdfreader.cjs",
-      "import": "./dist/pdfreader.js"
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs.js",
+      "import": "./dist/index.es.js"
     },
     "./style.css": "./dist/style.css"
   },
